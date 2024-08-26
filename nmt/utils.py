@@ -31,7 +31,7 @@ def create_decoder_mask(
     device: str = "cpu",
 ) -> torch.Tensor:
     return (
-        (decoder_input != pad_token_id).unsqueeze(dim=0).unsueeze(dim=0).int()
+        (decoder_input != pad_token_id).unsqueeze(dim=0).unsqueeze(dim=0).int()
         & causal_mask(size=decoder_input.size(0))
     ).to(device=device)
 

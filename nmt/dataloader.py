@@ -57,7 +57,7 @@ def get_dataloader(
         tokenizer_tgt=tokenizer_tgt,
         lang_src=config["lang_src"],
         lang_tgt=config["lang_tgt"],
-        seq_length=-config["seq_length"],
+        seq_length=config["seq_length"],
     )
 
     # Create the data loaders
