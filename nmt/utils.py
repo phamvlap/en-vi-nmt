@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import Dataset
 
 from nltk.translate import bleu_score
-from datasets import load_dataset
+from datasets import load_dataset, Dataset as DatasetModel
 
 
 # Create a tensor with zeros above the diagonal, ones below and on the diagonal
@@ -38,7 +38,7 @@ def create_decoder_mask(
 
 def load_data(config: dict, **kwargs) -> Dataset:
     ds = load_dataset(path=config["datasource"], **kwargs)
-    out = Dataset.from_dict(
+    out = DatasetModel.from_dict(
         {
             config["lang_src"]: ds["English"],
             config["lang_tgt"]: ds["Vietnamese"],
