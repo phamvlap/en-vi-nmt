@@ -6,7 +6,7 @@ from tokenizers.models import WordLevel
 from tokenizers.pre_tokenizers import Whitespace
 from tokenizers.trainers import WordLevelTrainer
 
-from nmt.constants import SpecialToken
+from .constants import SpecialToken
 
 
 # Return a generator that yields all the sentences in the dataset (iterator)

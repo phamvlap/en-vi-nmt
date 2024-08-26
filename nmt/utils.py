@@ -5,7 +5,7 @@ from nltk.translate import bleu_score
 from datasets import load_dataset
 from tokenizers import Tokenizer
 
-from nmt.bilingual_dataset import BilingualDataset
+from .bilingual_dataset import BilingualDataset
 
 
 # Create a tensor with zeros above the diagonal, ones below and on the diagonal

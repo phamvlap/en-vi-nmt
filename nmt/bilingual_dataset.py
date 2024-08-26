@@ -2,8 +2,8 @@ import torch
 from torch.utils.data import Dataset
 from tokenizers import Tokenizer
 
-from nmt.utils import create_encoder_mask, create_decoder_mask
-from nmt.constants import SpecialToken
+from .utils import create_encoder_mask, create_decoder_mask
+from .constants import SpecialToken
 
 
 class BilingualDataset(Dataset):

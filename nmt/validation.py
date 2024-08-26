@@ -4,8 +4,8 @@ from torch.utils.data import DataLoader
 
 from tokenizers import Tokenizer
 
-from nmt.utils import causal_mask, calc_bleu_score
-from nmt.constants import SpecialToken
+from .utils import causal_mask, calc_bleu_score
+from .constants import SpecialToken
 
 
 def greedy_search_decode(
