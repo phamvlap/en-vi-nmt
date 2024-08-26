@@ -12,7 +12,7 @@ def get_bilingual_dataset(
     lang_src: str,
     lang_tgt: str,
     seq_length: int,
-) -> tuple[Dataset, Dataset]:
+) -> tuple[BilingualDataset, BilingualDataset]:
     # Split the dataset into training (90%) and testing (10%) (default)
     train_dataset_size = int(train_size * len(dataset))
     test_dataset_size = len(dataset) - train_dataset_size
