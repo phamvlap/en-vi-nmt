@@ -40,8 +40,8 @@ class BilingualDataset(Dataset):
     def __getitem__(self, index: str) -> dict:
         # Locate the source and target text
         src_target_pair = self.dataset[index]
-        src_text = src_target_pair["translation"][self.lang_src]
-        tgt_text = src_target_pair["translation"][self.lang_tgt]
+        src_text = src_target_pair[self.lang_src]
+        tgt_text = src_target_pair[self.lang_tgt]
 
         # Tokenize the source and target text
         encoder_input_tokens = self.tokenizer_src.encode(sequence=src_text).ids
