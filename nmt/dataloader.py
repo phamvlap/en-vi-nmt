@@ -52,7 +52,7 @@ def get_dataloader(
 ) -> tuple[DataLoader, DataLoader]:
     train_set, test_set = get_bilingual_dataset(
         dataset=dataset,
-        train_size=config["train_size"],
+        train_size=config["train_ratio"],
         tokenizer_src=tokenizer_src,
         tokenizer_tgt=tokenizer_tgt,
         lang_src=config["lang_src"],
