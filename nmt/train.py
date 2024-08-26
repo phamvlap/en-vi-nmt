@@ -7,7 +7,8 @@ from tqdm import tqdm
 
 from .tokenize import get_tokenizer
 from .validation import run_validation
-from .utils import load_data, get_dataloader
+from .utils import load_data
+from .dataloader import get_dataloader
 from .constants import SpecialToken
 from transformer.models.transformer import Transformer, build_transformer
 from config.config import get_weights_file_path
