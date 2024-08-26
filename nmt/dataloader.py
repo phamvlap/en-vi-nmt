@@ -63,12 +63,12 @@ def get_dataloader(
     # Create the data loaders
     train_data_loader = DataLoader(
         dataset=train_set,
-        batch_size=config["batch_size"],
+        batch_size=config["batch_size_train"],
         shuffle=True,
     )
     test_data_loader = DataLoader(
         dataset=test_set,
-        batch_size=1,
+        batch_size=config["batch_size_test"],
         shuffle=True,
     )
 

@@ -2,7 +2,7 @@ def get_config() -> dict[str, int | str]:
     config = {
         "datasource": "harouzie/vi_en-translation",
         "batch_size_train": 8,  # number of samples in a batch
-        "batch_size_test": 16,
+        "batch_size_test": 2,
         "num_epochs": 20,  # number of epochs
         "lr": 10**-4,  # learning rate
         "seq_length": 350,  # maximum sequence length
