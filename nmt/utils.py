@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
-from torchtext.data.metrics import bleu_score
 
+from nltk.translate import bleu_score
 from datasets import load_dataset
 from tokenizers import Tokenizer
 
@@ -52,12 +52,13 @@ def load_data(config: dict, **kwargs) -> Dataset:
 
 def calc_bleu_score(cans: list[str], refs: list[list[str]]) -> list[float]:
     scores = []
-    for n in range(1, 5):
+    for i in range(1, 5):
+        weights = tuple([1 / i for _ in range(i)])
         scores.append(
-            bleu_score(
-                candidate_corpus=cans,
-                references_corpus=refs,
-                max_n=n,
+            bleu_score.corpus_bleu(
+                list_of_references=refs,
+                hypotheses=cans,
+                weights=weights,
             )
         )
     return scores
