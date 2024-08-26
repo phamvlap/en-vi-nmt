@@ -14,10 +14,10 @@ class FeedForward(nn.Module):
         super().__init__()
         self.linear1 = nn.Linear(
             in_features=d_model, out_features=d_ff, dtype=torch.float32
-        )
+        )  # w1 and b1
         self.linear2 = nn.Linear(
             in_features=d_ff, out_features=d_model, dtype=torch.float32
-        )
+        )  # w2 and b2
         self.dropout = nn.Dropout(p=dropout)
 
     # (batch_size, seq_length, d_model) --> (batch_size, seq_length, d_ff) --> (batch_size, seq_length, d_model)

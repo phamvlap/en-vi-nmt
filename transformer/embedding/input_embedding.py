@@ -17,4 +17,5 @@ class InputEmbedding(nn.Module):
         self.embedding = nn.Embedding(num_embeddings=vocab_size, embedding_dim=d_model)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x (batch_size, seq_length) -> x (batch_size, seq_length, d_model)
         return self.embedding(x) * math.sqrt(self.d_model)

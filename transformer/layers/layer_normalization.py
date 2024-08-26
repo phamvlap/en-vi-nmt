@@ -5,17 +5,20 @@ import torch.nn as nn
 class LayerNormalization(nn.Module):
     """
     Args:
-            epsilon: ??
-    x(l) =(x - mean) / (std + epsilon) * alpha + bias
+        features: dimension of the input
+        epsilon: small number to avoid division by zero when std is zero or close to zero
+    x(l) = (x - mean) / (std + epsilon) * alpha + bias
+    alpha, bias: learnable parameters
     """
 
-    def __init__(self, epsilon: float = 10**-6) -> None:
+    def __init__(self, features: int, epsilon: float = 10**-6) -> None:
         super().__init__()
         self.epsilon = epsilon
-        self.alpha = nn.Parameter(torch.ones(1))  # multiplicative
-        self.bias = nn.Parameter(torch.zeros(1))  # additive
+        self.alpha = nn.Parameter(torch.ones(features))  # alpha (multiplicative)
+        self.bias = nn.Parameter(torch.zeros(features))  # bias (additive)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        mean = x.mean(dim=-1, keepdim=True)
-        std = x.std(dim=-1, keepdim=True)
+        # x (batch_size, seq_length, d_model)
+        mean = x.mean(dim=-1, keepdim=True)  # (batch_size, seq_length, 1)
+        std = x.std(dim=-1, keepdim=True)  # (batch_size, seq_length, 1)
         return (x - mean) / (std + self.epsilon) * self.alpha + self.bias

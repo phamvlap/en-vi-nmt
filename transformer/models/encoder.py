@@ -17,6 +17,7 @@ class EncoderLayer(nn.Module):
 
     def __init__(
         self,
+        features: int,
         self_attention: MultiHeadAttention,
         feed_forward: FeedForward,
         dropout: float,
@@ -25,7 +26,7 @@ class EncoderLayer(nn.Module):
         self.self_attention = self_attention
         self.feed_forward = feed_forward
         self.residual_connections = nn.ModuleList(
-            [ResidualConnection(dropout) for _ in range(2)]
+            [ResidualConnection(features=features, dropout=dropout) for _ in range(2)]
         )
 
     def forward(self, x: torch.Tensor, src_mask: torch.Tensor) -> torch.Tensor:
@@ -43,10 +44,10 @@ class Encoder(nn.Module):
             layers: list of residual connections
     """
 
-    def __init__(self, layers: nn.ModuleList) -> None:
+    def __init__(self, features: int, layers: nn.ModuleList) -> None:
         super().__init__()
         self.layers = layers
-        self.norm = LayerNormalization()
+        self.norm = LayerNormalization(features=features)
 
     def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         for layer in self.layers:

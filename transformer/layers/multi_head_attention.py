@@ -50,8 +50,11 @@ class MultiHeadAttention(nn.Module):
             query, key.transpose(-2, -1)
         ) / math.sqrt(d_k)
 
+        # Set the masked positions (mask == 0) to -1e9
         if mask is not None:
-            attention_scores = attention_scores.masked_fill_(mask == 0, -1e9)  # ??
+            attention_scores = attention_scores.masked_fill_(
+                mask=(mask == 0), value=-1e9
+            )
 
         attention_scores = attention_scores.softmax(dim=-1)
         if dropout is not None:
@@ -67,11 +70,13 @@ class MultiHeadAttention(nn.Module):
         v: torch.Tensor,
         mask: torch.Tensor,
     ) -> torch.Tensor:
+        # (batch_size, seq_length, d_model) --> (batch_size, seq_length, d_model)
         query: torch.Tensor = self.w_query(q)
         key: torch.Tensor = self.w_key(k)
         value: torch.Tensor = self.w_value(v)
 
-        # [query/key/value](batch_size, seq_length, d_model)
+        # h * d_k == d_model
+        # [query | key | value](batch_size, seq_length, d_model)
         # --> (batch_size, seq_length, h, d_k)
         # --> (batch_size, h, seq_length, d_k)
         query = query.view(query.shape[0], query.shape[1], self.h, self.d_k).transpose(
