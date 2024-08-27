@@ -6,37 +6,46 @@ from tokenizers import Tokenizer
 
 from .utils import causal_mask, calc_bleu_score
 from .constants import SpecialToken
+from transformer.models.transformer import Transformer
+
+
+"""
+Args:
+    model: Transformer model
+    source: source tensor (batch_size, seq_length)
+    source_mask: source mask tensor (batch_size, 1, 1, seq_length)
+    tokenizer_tgt: target tokenizer
+    seq_length: maximum sequence length
+    device: device
+"""
 
 
 def greedy_search_decode(
-    model: nn.Module,
+    model: Transformer,
     source: torch.Tensor,
-    source_mask: torch.Tensor | None,
-    tokenizer_src: torch.Tensor,
+    source_mask: torch.Tensor,
     tokenizer_tgt: torch.Tensor,
-    max_length: int,
+    seq_length: int,
     device: torch.device,
 ) -> torch.Tensor:
-    # Get the [SOS] and [EOS] token indexes
-    sos_index = tokenizer_tgt.token_to_id(SpecialToken.SOS)
-    eos_index = tokenizer_tgt.token_to_id(SpecialToken.EOS)
+    # Get the <SOS> and <EOS> token ids
+    sos_token_id = tokenizer_tgt.token_to_id(SpecialToken.SOS)
+    eos_token_id = tokenizer_tgt.token_to_id(SpecialToken.EOS)
 
-    # Precompute the encoder output and reuse it for every token we get from the decoder
     # encoder_output (batch_size, seq_length, d_model)
     encoder_output = model.encode(src=source, src_mask=source_mask)
-    # Initialize the decoder input with the [SOS] token
-    # decoder_input (1, 1)
-    decoder_input = torch.empty(1, 1).fill_(value=sos_index).type_as(source).to(device)
-    while True:
-        if decoder_input.size(1) >= max_length:
-            break
 
-        # Build mask for the decoder input (target)
+    # Initialize the decoder input with the <SOS> token: decoder_input (1, 1)
+    decoder_input = (
+        torch.empty(1, 1).fill_(value=sos_token_id).type_as(source).to(device)
+    )
+    for _ in range(seq_length):
+        # Build mask for the decoder input: decoder_mask (1, _, _)
         decoder_mask = (
             causal_mask(size=decoder_input.size(1)).type_as(source_mask).to(device)
         )
 
-        # Calculate the output of the decoder
+        # Calculate the output of the decoder: decoder_output (batch_size, _, d_model)
         decoder_output = model.decode(
             encoder_output=encoder_output,
             src_mask=source_mask,
@@ -44,21 +53,26 @@ def greedy_search_decode(
             tgt_mask=decoder_mask,
         )
 
-        # Project the decoder output
-        # decoder_output[:, -1] (1, d_model): get the last token (last column)
-        projection_output = model.project(x=decoder_output[:, -1])
+        # Project the decoder output: projection_output (batch_size, 1, tgt_vocab_size)
+        projection_output = model.project(x=decoder_output[:, -1, :])
 
         # Get the token with the highest probability
-        next_value, next_index = torch.max(input=projection_output, dim=1)
-        next_token = (
-            torch.empty(1, 1).fill_(value=next_index.item()).type_as(source).to(device)
+        next_token = torch.argmax(input=projection_output, dim=-1)
+
+        # Concatenate the next token to the decoder input
+        decoder_input = torch.cat(
+            tensors=[
+                decoder_input,
+                torch.empty(1, 1)
+                .fill_(value=next_token.item())
+                .type_as(source)
+                .to(device),
+            ],
+            dim=1,
         )
 
-        # Append the next token to the decoder input
-        decoder_input = torch.cat(tensors=[decoder_input, next_token], dim=1)
-
-        # If the next token is the [EOS] token, stop
-        if next_index.item() == eos_index:
+        # If the next token is the <EOS> token, stop
+        if next_token == eos_token_id:
             break
 
     return decoder_input.squeeze(dim=0)
@@ -73,7 +87,7 @@ def run_validation(
     device: torch.device,
     num_examples: int = 5,
 ) -> None:
-    print_step = len(val_data_loader) // num_examples
+    logging_interval = len(val_data_loader) // num_examples
 
     with torch.no_grad():
         count = 0
@@ -99,7 +113,6 @@ def run_validation(
                 model=model,
                 source=encoder_input,
                 source_mask=encoder_mask,
-                tokenizer_src=tokenizer_src,
                 tokenizer_tgt=tokenizer_tgt,
                 max_length=max_length,
                 device=device,
@@ -116,7 +129,7 @@ def run_validation(
             expected.append([target_tokens])
             predicted.append(predicted_tokens)
 
-            if count % print_step == 0:
+            if count % logging_interval == 0:
                 # Print the source, target and predicted text to console
                 print("SOURCE: {}".format(source_text))
                 print("TARGET: {}".format(target_text))
