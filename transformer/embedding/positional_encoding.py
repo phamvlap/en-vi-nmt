@@ -2,6 +2,8 @@ import math
 import torch
 import torch.nn as nn
 
+from torch import Tensor
+
 
 class PositionalEncoding(nn.Module):
     """
@@ -45,7 +47,7 @@ class PositionalEncoding(nn.Module):
         # Register pe as buffer
         self.register_buffer("pe", pe)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         # x (batch_size, seq_length, d_model) -> (batch_size, seq_length, d_model)
         x = x + (self.pe[:, : x.shape[1], :]).requires_grad_(False)
         return self.dropout(x)

@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from torch import Tensor
+
 
 class FeedForward(nn.Module):
     """
@@ -21,8 +23,8 @@ class FeedForward(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     # (batch_size, seq_length, d_model) --> (batch_size, seq_length, d_ff) --> (batch_size, seq_length, d_model)
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        y: torch.Tensor = self.linear1(x)
+    def forward(self, x: Tensor) -> Tensor:
+        y: Tensor = self.linear1(x)
         y = torch.relu(y)  # relu(x) = max(0, x)
         y = self.dropout(y)
         y = self.linear2(y)

@@ -1,4 +1,6 @@
 import torch
+
+from torch import Tensor
 from torch.utils.data import Dataset
 
 from nltk.translate import bleu_score
@@ -6,16 +8,16 @@ from datasets import load_dataset, Dataset as DatasetModel
 
 
 # Create a tensor with zeros above the diagonal, ones below and on the diagonal
-def causal_mask(size: torch.Tensor) -> torch.Tensor:
+def causal_mask(size: Tensor) -> Tensor:
     mask = torch.triu(torch.ones(1, size, size), diagonal=1).to(dtype=torch.int64)
     return (mask == 0).int()
 
 
 def create_encoder_mask(
-    encoder_input: torch.Tensor,
-    pad_token_id: torch.Tensor,
+    encoder_input: Tensor,
+    pad_token_id: Tensor,
     device: str = "cpu",
-) -> torch.Tensor:
+) -> Tensor:
     return (
         (encoder_input != pad_token_id)
         .unsqueeze(dim=0)
@@ -26,10 +28,10 @@ def create_encoder_mask(
 
 
 def create_decoder_mask(
-    decoder_input: torch.Tensor,
-    pad_token_id: torch.Tensor,
+    decoder_input: Tensor,
+    pad_token_id: Tensor,
     device: str = "cpu",
-) -> torch.Tensor:
+) -> Tensor:
     return (
         (decoder_input != pad_token_id).unsqueeze(dim=0).unsqueeze(dim=0).int()
         & causal_mask(size=decoder_input.size(0))

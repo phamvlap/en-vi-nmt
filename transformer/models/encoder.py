@@ -1,5 +1,6 @@
-import torch
 import torch.nn as nn
+
+from torch import Tensor
 
 from transformer.layers.multi_head_attention import MultiHeadAttention
 from transformer.layers.feed_forward import FeedForward
@@ -29,7 +30,7 @@ class EncoderLayer(nn.Module):
             [ResidualConnection(features=features, dropout=dropout) for _ in range(2)]
         )
 
-    def forward(self, x: torch.Tensor, src_mask: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Tensor, src_mask: Tensor) -> Tensor:
         x = self.residual_connections[0](
             x=x,
             sublayer=(lambda x: self.self_attention(q=x, k=x, v=x, mask=src_mask)),
@@ -49,7 +50,7 @@ class Encoder(nn.Module):
         self.layers = layers
         self.norm = LayerNormalization(features=features)
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Tensor, mask: Tensor) -> Tensor:
         for layer in self.layers:
             x = layer(x=x, src_mask=mask)
         return self.norm(x)

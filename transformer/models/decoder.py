@@ -1,5 +1,6 @@
-import torch
 import torch.nn as nn
+
+from torch import Tensor
 
 from transformer.layers.multi_head_attention import MultiHeadAttention
 from transformer.layers.feed_forward import FeedForward
@@ -35,11 +36,11 @@ class DecoderLayer(nn.Module):
     # src_mask, tgt_mask ??
     def forward(
         self,
-        x: torch.Tensor,
-        encoder_output: torch.Tensor,
-        src_mask: torch.Tensor,
-        tgt_mask: torch.Tensor,
-    ) -> torch.Tensor:
+        x: Tensor,
+        encoder_output: Tensor,
+        src_mask: Tensor,
+        tgt_mask: Tensor,
+    ) -> Tensor:
         x = self.residual_connections[0](
             x=x,
             sublayer=lambda x: self.self_attention(q=x, k=x, v=x, mask=tgt_mask),
@@ -67,11 +68,11 @@ class Decoder(nn.Module):
 
     def forward(
         self,
-        x: torch.Tensor,
-        encoder_output: torch.Tensor,
-        src_mask: torch.Tensor,
-        tgt_mask: torch.Tensor,
-    ) -> torch.Tensor:
+        x: Tensor,
+        encoder_output: Tensor,
+        src_mask: Tensor,
+        tgt_mask: Tensor,
+    ) -> Tensor:
         for layer in self.layers:
             x = layer(
                 x=x,

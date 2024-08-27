@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+
+from torch import Tensor
 from torch.utils.data import DataLoader
 
 from tokenizers import Tokenizer
@@ -22,12 +24,12 @@ Args:
 
 def greedy_search_decode(
     model: Transformer,
-    source: torch.Tensor,
-    source_mask: torch.Tensor,
-    tokenizer_tgt: torch.Tensor,
+    source: Tensor,
+    source_mask: Tensor,
+    tokenizer_tgt: Tensor,
     seq_length: int,
     device: torch.device,
-) -> torch.Tensor:
+) -> Tensor:
     # Get the <SOS> and <EOS> token ids
     sos_token_id = tokenizer_tgt.token_to_id(SpecialToken.SOS)
     eos_token_id = tokenizer_tgt.token_to_id(SpecialToken.EOS)

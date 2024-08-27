@@ -1,5 +1,6 @@
-import torch
 import torch.nn as nn
+
+from torch import Tensor
 
 from transformer.models.encoder import Encoder, EncoderLayer
 from transformer.models.decoder import Decoder, DecoderLayer
@@ -30,18 +31,18 @@ class Transformer(nn.Module):
         self.tgt_position = tgt_position
         self.projection_layer = projection_layer
 
-    def encode(self, src: torch.Tensor, src_mask: torch.Tensor) -> torch.Tensor:
+    def encode(self, src: Tensor, src_mask: Tensor) -> Tensor:
         src = self.src_embedding(src)
         src = self.src_position(src)
         return self.encoder(x=src, mask=src_mask)
 
     def decode(
         self,
-        encoder_output: torch.Tensor,
-        src_mask: torch.Tensor,
-        tgt: torch.Tensor,
-        tgt_mask: torch.Tensor,
-    ) -> torch.Tensor:
+        encoder_output: Tensor,
+        src_mask: Tensor,
+        tgt: Tensor,
+        tgt_mask: Tensor,
+    ) -> Tensor:
         tgt = self.tgt_embedding(tgt)
         tgt = self.tgt_position(tgt)
         return self.decoder(
@@ -51,7 +52,7 @@ class Transformer(nn.Module):
             tgt_mask=tgt_mask,
         )
 
-    def project(self, x: torch.Tensor) -> torch.Tensor:
+    def project(self, x: Tensor) -> Tensor:
         return self.projection_layer(x)
 
 

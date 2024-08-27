@@ -2,6 +2,8 @@ import math
 import torch
 import torch.nn as nn
 
+from torch import Tensor
+
 
 class MultiHeadAttention(nn.Module):
     """
@@ -37,16 +39,16 @@ class MultiHeadAttention(nn.Module):
 
     @staticmethod
     def attention(
-        query: torch.Tensor,
-        key: torch.Tensor,
-        value: torch.Tensor,
-        mask: torch.Tensor,
+        query: Tensor,
+        key: Tensor,
+        value: Tensor,
+        mask: Tensor,
         dropout: nn.Dropout | None,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[Tensor, Tensor]:
         d_k: int = query.shape[-1]
 
         # (batch_size, h, seq_length, d_k) @ (batch_size, h, d_k, seq_length) = (batch_size, h, seq_length, seq_length)
-        attention_scores: torch.Tensor = torch.matmul(
+        attention_scores: Tensor = torch.matmul(
             query, key.transpose(-2, -1)
         ) / math.sqrt(d_k)
 
@@ -63,17 +65,11 @@ class MultiHeadAttention(nn.Module):
         # (batch_size, h, seq_length, seq_length) @ (batch_size, h, seq_length, d_k) = (batch_size, h, seq_length, d_k)
         return torch.matmul(attention_scores, value), attention_scores
 
-    def forward(
-        self,
-        q: torch.Tensor,
-        k: torch.Tensor,
-        v: torch.Tensor,
-        mask: torch.Tensor,
-    ) -> torch.Tensor:
+    def forward(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor) -> Tensor:
         # (batch_size, seq_length, d_model) --> (batch_size, seq_length, d_model)
-        query: torch.Tensor = self.w_query(q)
-        key: torch.Tensor = self.w_key(k)
-        value: torch.Tensor = self.w_value(v)
+        query: Tensor = self.w_query(q)
+        key: Tensor = self.w_key(k)
+        value: Tensor = self.w_value(v)
 
         # h * d_k == d_model
         # [query | key | value](batch_size, seq_length, d_model)

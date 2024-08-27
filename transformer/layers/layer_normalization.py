@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from torch import Tensor
+
 
 class LayerNormalization(nn.Module):
     """
@@ -17,7 +19,7 @@ class LayerNormalization(nn.Module):
         self.alpha = nn.Parameter(torch.ones(features))  # alpha (multiplicative)
         self.bias = nn.Parameter(torch.zeros(features))  # bias (additive)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: Tensor) -> Tensor:
         # x (batch_size, seq_length, d_model)
         mean = x.mean(dim=-1, keepdim=True)  # (batch_size, seq_length, 1)
         std = x.std(dim=-1, keepdim=True)  # (batch_size, seq_length, 1)
