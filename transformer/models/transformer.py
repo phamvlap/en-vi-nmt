@@ -107,8 +107,8 @@ def build_transformer(
         )
         decoder_blocks.append(decoder_layer)
 
-    encoder = Encoder(layers=nn.ModuleList(encoder_blocks))
-    decoder = Decoder(layers=nn.ModuleList(decoder_blocks))
+    encoder = Encoder(features=d_model, layers=nn.ModuleList(encoder_blocks))
+    decoder = Decoder(features=d_model, layers=nn.ModuleList(decoder_blocks))
 
     projection_layer = ProjectionLayer(d_model=d_model, vocab_size=tgt_vocab_size)
 
