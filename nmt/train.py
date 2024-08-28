@@ -172,16 +172,17 @@ def train_model(config: dict) -> None:
 
         with torch.no_grad():
             # Run validation
-            test_bleu_scores = run_validation(
+            bleu_scores_corpus = run_validation(
                 model=model,
                 val_data_loader=test_data_loader,
                 tokenizer_src=tokenizer_src,
                 tokenizer_tgt=tokenizer_tgt,
-                max_length=config["seq_length"],
+                seq_length=config["seq_length"],
                 device=device,
             )
-            for i in range(len(test_bleu_scores)):
-                print("TEST-BLEU-{0}: {1:.4f}".format(i + 1, test_bleu_scores[i]))
+            print("BLEU SCORE OF PREDICTION CORPUS")
+            for i in range(len(bleu_scores_corpus)):
+                print("BLEU-{0}: {1:.4f}".format(i + 1, bleu_scores_corpus[i]))
 
         print("Mean train loss: {:.4f}".format(train_loss / len(train_data_loader)))
 

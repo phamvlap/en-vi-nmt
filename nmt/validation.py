@@ -42,7 +42,7 @@ def greedy_search_decode(
         torch.empty(1, 1).fill_(value=sos_token_id).type_as(source).to(device)
     )
     for _ in range(seq_length):
-        # Build mask for the decoder input: decoder_mask (1, _, _)
+        # Build mask for the decoder input: decoder_mask (1, decoder_input.size(1), decoder_input.size(1))
         decoder_mask = (
             causal_mask(size=decoder_input.size(1)).type_as(source_mask).to(device)
         )
@@ -85,7 +85,7 @@ def run_validation(
     val_data_loader: DataLoader,
     tokenizer_src: Tokenizer,
     tokenizer_tgt: Tokenizer,
-    max_length: int,
+    seq_length: int,
     device: torch.device,
     num_examples: int = 5,
 ) -> None:
@@ -116,7 +116,7 @@ def run_validation(
                 source=encoder_input,
                 source_mask=encoder_mask,
                 tokenizer_tgt=tokenizer_tgt,
-                max_length=max_length,
+                seq_length=seq_length,
                 device=device,
             )
             model_output_text = tokenizer_tgt.decode(
@@ -142,7 +142,7 @@ def run_validation(
                 bleu_scores = calc_bleu_score(
                     cans=[predicted_tokens], refs=[[target_tokens]]
                 )
-                print("BLEU SCORE OF PREDICTION: {}".format(count))
+                print("BLEU SCORE OF PREDICTION {}TH SENTENCE".format(count))
                 for i in range(len(bleu_scores)):
                     print("BLEU-{0}: {1:.4f}".format(i + 1, bleu_scores[i]))
 
