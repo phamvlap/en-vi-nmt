@@ -57,7 +57,7 @@ def train_model(config: dict) -> None:
         print("Device name: cpu")
 
     # Create the folder to save model weights
-    Path(f"{config["model_folder"]}").mkdir(parents=True, exist_ok=True)
+    Path(f"{config['model_folder']}").mkdir(parents=True, exist_ok=True)
 
     # Load the dataset
     dataset = load_data(config=config)

@@ -27,4 +27,4 @@ def get_config() -> dict[str, int | str]:
 
 
 def get_weights_file_path(config: dict, epoch: str) -> str:
-    return f"{config['model_folder']}/{config["model_basename"]}{epoch}.pt"
+    return f"{config['model_folder']}/{config['model_basename']}{epoch}.pt"
