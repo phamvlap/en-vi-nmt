@@ -63,7 +63,7 @@ def train_model(config: dict) -> None:
     )
 
     # Load the dataset
-    dataset = load_data(config=config, split="train")
+    dataset = load_data(config=config)
 
     # Get the tokenizers
     tokenizer_src, tokenizer_tgt = get_tokenizer(dataset=dataset, config=config)

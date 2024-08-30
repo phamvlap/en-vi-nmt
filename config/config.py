@@ -1,6 +1,8 @@
 def get_config() -> dict[str, int | str]:
     config = {
         "datasource": "harouzie/vi_en-translation",
+        "split_mode": "train",  # [None, 'train', 'test', 'validation']
+        "data_files": None,  # files name (e.g. samples.csv)
         "batch_size_train": 8,  # number of samples in a batch
         "batch_size_test": 1,
         "num_epochs": 20,  # number of epochs

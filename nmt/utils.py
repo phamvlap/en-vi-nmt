@@ -38,8 +38,18 @@ def create_decoder_mask(
     ).to(device=device)
 
 
-def load_data(config: dict, **kwargs) -> Dataset:
-    ds = load_dataset(path=config["datasource"], **kwargs)
+def load_data(config: dict) -> Dataset:
+    if config["data_files"] is not None:
+        ds = load_dataset(
+            path=config["datasource"],
+            data_files=config["data_files"],
+            split=config["split_mode"],
+        )
+    else:
+        ds = load_dataset(
+            path=config["datasource"],
+            split=config["split_mode"],
+        )
     out = DatasetModel.from_dict(
         {
             config["lang_src"]: ds["English"],
