@@ -5,7 +5,7 @@ import torch.optim as optim
 from pathlib import Path
 from tqdm import tqdm
 
-from .tokenize import get_tokenizer
+from .preprocess import load_tokenizer
 from .validation import run_validation
 from .utils import load_data
 from .dataloader import get_dataloader
@@ -63,7 +63,7 @@ def train_model(config: dict) -> None:
     dataset = load_data(config=config)
 
     # Get the tokenizers
-    tokenizer_src, tokenizer_tgt = get_tokenizer(dataset=dataset, config=config)
+    tokenizer_src, tokenizer_tgt = load_tokenizer(dataset=dataset, config=config)
 
     # Get the data loaders
     train_data_loader, test_data_loader = get_dataloader(

@@ -3,6 +3,9 @@ def get_config() -> dict[str, int | str]:
         "datasource": "harouzie/vi_en-translation",
         "split_mode": "train",  # [None, 'train', 'test', 'validation']
         "data_files": None,  # files name (e.g. samples.csv)
+        "tokenizer_model": "bpe",  # [word_level, bpe]
+        "tokenizer_dir": "tokenizers",
+        "tokenizer_file": "tokenizer_{0}.json",  # tokenizer file
         "batch_size_train": 8,  # number of samples in a batch
         "batch_size_test": 1,
         "num_epochs": 20,  # number of epochs
@@ -19,7 +22,6 @@ def get_config() -> dict[str, int | str]:
         "model_folder": "weights",  # folder to save model weights
         "model_basename": "tmodel_",  # base name for model weights
         "preload": None,  # whether to restart training after maybe model crashed
-        "tokenizer_file": "tokenizer_{0}.json",  # tokenizer file
         "experiment_name": "runs/tmodel",  # save the logs while training
     }
 
