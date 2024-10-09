@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 from torch import Tensor
-from transformer.layers.layer_normalization import LayerNormalization
+from .layer_normalization import LayerNormalization
 
 
 class ResidualConnection(nn.Module):

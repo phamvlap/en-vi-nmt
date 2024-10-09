@@ -2,13 +2,10 @@ import torch.nn as nn
 
 from torch import Tensor
 
-from transformer.models.encoder import Encoder, EncoderLayer
-from transformer.models.decoder import Decoder, DecoderLayer
-from transformer.embedding.input_embedding import InputEmbedding
-from transformer.embedding.positional_encoding import PositionalEncoding
-from transformer.layers.projection_layer import ProjectionLayer
-from transformer.layers.multi_head_attention import MultiHeadAttention
-from transformer.layers.feed_forward import FeedForward
+from .encoder import Encoder, EncoderLayer
+from .decoder import Decoder, DecoderLayer
+from ..embedding import InputEmbedding, PositionalEncoding
+from ..layers import ProjectionLayer, MultiHeadAttention, FeedForward
 
 
 class Transformer(nn.Module):

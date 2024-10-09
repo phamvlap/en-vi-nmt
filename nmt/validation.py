@@ -8,7 +8,7 @@ from tokenizers import Tokenizer
 
 from .utils import causal_mask, calc_bleu_score
 from .constants import SpecialToken
-from transformer.models.transformer import Transformer
+from transformer.models import Transformer
 
 
 """

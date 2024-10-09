@@ -2,10 +2,12 @@ import torch.nn as nn
 
 from torch import Tensor
 
-from transformer.layers.multi_head_attention import MultiHeadAttention
-from transformer.layers.feed_forward import FeedForward
-from transformer.layers.residual_connection import ResidualConnection
-from transformer.layers.layer_normalization import LayerNormalization
+from ..layers import (
+    MultiHeadAttention,
+    FeedForward,
+    ResidualConnection,
+    LayerNormalization,
+)
 
 
 class EncoderLayer(nn.Module):
