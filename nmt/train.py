@@ -1,50 +1,15 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
 
 from pathlib import Path
-from tqdm import tqdm
 
+from transformer.models import TransformerConfig, build_transformer
 from .preprocess import load_tokenizer
-from .validation import run_validation
-from .utils import load_data
+from .utils import load_data, get_list_weights_file_paths, get_weights_file_path
 from .dataloader import get_dataloader
 from .constants import SpecialToken
-from transformer.models import Transformer, build_transformer
-from config.config import get_weights_file_path
-
-
-def get_model(
-    config: dict,
-    vocab_src_length: int,
-    vocab_tgt_length: int,
-) -> Transformer:
-    model = build_transformer(
-        src_vocab_size=vocab_src_length,
-        tgt_vocab_size=vocab_tgt_length,
-        src_seq_length=config["seq_length"],
-        tgt_seq_length=config["seq_length"],
-        d_model=config["d_model"],
-    )
-    return model
-
-
-def save_model(
-    model_filename: str,
-    epoch: int,
-    model: nn.Module,
-    optimizer,
-    global_step: int,
-):
-    torch.save(
-        obj={
-            "epoch": epoch,
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-            "global_step": global_step,
-        },
-        f=model_filename,
-    )
+from .utils import make_optimizer, get_lr_scheduler
+from .trainer import TrainerArguments, Trainer
 
 
 def train_model(config: dict) -> None:
@@ -73,126 +38,115 @@ def train_model(config: dict) -> None:
         tokenizer_tgt=tokenizer_tgt,
     )
 
-    # Create model
-    model = get_model(
-        config=config,
-        vocab_src_length=tokenizer_src.get_vocab_size(),
-        vocab_tgt_length=tokenizer_tgt.get_vocab_size(),
-    ).to(device)
-
-    # Optimizer ?? eps
-    optimizer = optim.Adam(params=model.parameters(), lr=config["lr"], eps=1e-9)
-
     # Preload model
     initial_epoch = 0
     global_step = 0
-    if config["preload"] is not None:
-        model_filename = get_weights_file_path(config=config, epoch=config["preload"])
-        print('Preloading model from "{0}"'.format(model_filename))
-        state = torch.load(f=model_filename)
-        initial_epoch = state["epoch"] + 1
-        optimizer.load_state_dict(state_dict=state["optimizer_state_dict"])
-        global_step = state["global_step"]
+    scaler_state_dict = None
+    filepath = None
+
+    if config["preload"] == "latest":
+        list_filepaths = get_list_weights_file_paths(config=config)
+        if list_filepaths is not None:
+            filepath = list_filepaths[-1]
+    elif config["preload"] is not None and isinstance(config["preload"], int):
+        filepath = get_weights_file_path(
+            model_folder=config["model_folder"],
+            model_basename=config["model_basename"],
+            epoch=config["preload"],
+        )
+
+    if filepath is None:
+        print("Training model from scratch...")
+        # Build model
+        model_config = TransformerConfig(
+            src_vocab_size=tokenizer_src.get_vocab_size(),
+            tgt_vocab_size=tokenizer_tgt.get_vocab_size(),
+            src_seq_length=config["src_seq_length"],
+            tgt_seq_length=config["tgt_seq_length"],
+            d_model=config["d_model"],
+            h=config["num_heads"],
+            num_encoder_layers=config["num_encoder_layers"],
+            num_decoder_layers=config["num_decoder_layers"],
+            dropout=config["dropout"],
+            d_ff=config["d_ff"],
+            src_pad_token_id=tokenizer_src.token_to_id(SpecialToken.PAD),
+            tgt_pad_token_id=tokenizer_tgt.token_to_id(SpecialToken.PAD),
+        )
+        model = build_transformer(model_config)
+        model.to(device)
     else:
-        print("Training model from scratch ...")
+        print(f"Loading model from {filepath}...")
+
+        checkpoint = torch.load(filepath, map_location=device)
+
+        required_keys = [
+            "model_state_dict",
+            "model_config",
+            "optimizer_state_dict",
+        ]
+        for key in required_keys:
+            if key not in checkpoint:
+                raise ValueError(f"Key {key} not found in checkpoint.")
+
+        model_config = checkpoint["model_config"]
+        model = build_transformer(model_config)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        model.to(device)
+
+        if "epoch" in checkpoint:
+            initial_epoch = checkpoint["epoch"] + 1
+        if "global_step" in checkpoint:
+            global_step = checkpoint["global_step"]
+        if "scaler_state_dict" in checkpoint:
+            scaler_state_dict = checkpoint["scaler_state_dict"]
+
+    # Optimizer
+    optimizer = make_optimizer(model=model, config=config)
+
+    # Learning rate scheduler
+    lr_scheduler = get_lr_scheduler(optimizer=optimizer, config=config)
+
+    if checkpoint is not None:
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        if lr_scheduler is not None and "lr_scheduler_state_dict" in checkpoint:
+            lr_scheduler.load_state_dict(checkpoint["lr_scheduler_state_dict"])
 
     # Loss function
     loss_fn = nn.CrossEntropyLoss(
-        ignore_index=tokenizer_src.token_to_id(SpecialToken.PAD),
-        label_smoothing=0.1,  # ??
+        ignore_index=tokenizer_tgt.token_to_id(SpecialToken.PAD),
+        label_smoothing=0.1,
     ).to(device)
 
-    # Training loop
-    print("Starting training ...")
-    for epoch in range(initial_epoch, config["num_epochs"]):
-        # Clear the cache
-        torch.cuda.empty_cache()
-        # Set the model to training mode
-        model.train()
-        # Create a progress bar
-        batch_iterator = tqdm(
-            iterable=train_data_loader,
-            desc="Processing epoch {0}".format(epoch),
-        )
+    trainer_args = TrainerArguments(
+        seq_length=config["seq_length"],
+        initial_epoch=initial_epoch,
+        initial_global_step=global_step,
+        num_epochs=config["num_epochs"],
+        model_folder=config["model_folder"],
+        model_basename=config["model_basename"],
+        eval_every_n_steps=config["eval_every_n_steps"],
+        save_every_n_steps=config["save_every_n_steps"],
+        wandb_project=config["wandb_project"],
+        wandb_key=config["wandb_key"],
+        f16_precision=config["f16_precision"],
+        scaler_state_dict=scaler_state_dict,
+        max_grad_norm=config["max_grad_norm"],
+        log_examples=config["log_examples"],
+        logging_every_n_steps=config["logging_every_n_steps"],
+    )
 
-        train_loss = 0.0
+    trainer = Trainer(
+        model=model,
+        model_config=model_config,
+        src_tokenizer=tokenizer_src,
+        tgt_tokenizer=tokenizer_tgt,
+        optimizer=optimizer,
+        criterion=loss_fn,
+        args=trainer_args,
+        lr_scheduler=lr_scheduler,
+    )
 
-        for batch in batch_iterator:
-            # encoder_input(batch_size, seq_length)
-            encoder_input = batch["encoder_input"].to(device)
-            # decoder_input(batch_size, seq_length)
-            decoder_input = batch["decoder_input"].to(device)
-            # encoder_mask(batch_size, 1, 1, seq_length)
-            encoder_mask = batch["encoder_mask"].to(device)
-            # decoder_mask(batch_size, 1, seq_length, seq_length)
-            decoder_mask = batch["decoder_mask"].to(device)
-            # label(batch_size, seq_length)
-            label = batch["label"].to(device)
-
-            # Pass the inputs through the transformer model
-            encoder_output = model.encode(
-                src=encoder_input,
-                src_mask=encoder_mask,
-            )
-            decoder_output = model.decode(
-                encoder_output=encoder_output,
-                src_mask=encoder_mask,
-                tgt=decoder_input,
-                tgt_mask=decoder_mask,
-            )
-
-            # Project the decoder output to the vocab size
-            # projection_output(batch_size, seq_length, tgt_vocab_size)
-            projection_output = model.project(x=decoder_output)
-
-            # Calculate and show the loss
-            # (batch_size, seq_length, tgt_vocab_size) -> (batch_size * seq_length, tgt_vocab_size)
-            loss = loss_fn(
-                projection_output.view(-1, tokenizer_tgt.get_vocab_size()),
-                label.view(-1),  # (batch_size * seq_length)
-            )
-            train_loss += loss.item()
-            batch_iterator.set_postfix(
-                {
-                    "loss": "{:.4f}".format(loss.item()),
-                }
-            )
-
-            # Backpropagation the loss
-            loss.backward()
-
-            # Update the weights
-            optimizer.step()
-            optimizer.zero_grad(set_to_none=True)
-
-            global_step += 1
-
-        with torch.no_grad():
-            # Run validation
-            bleu_scores_corpus = run_validation(
-                model=model,
-                val_data_loader=test_data_loader,
-                tokenizer_src=tokenizer_src,
-                tokenizer_tgt=tokenizer_tgt,
-                seq_length=config["seq_length"],
-                device=device,
-            )
-            print("BLEU SCORE OF PREDICTION CORPUS")
-            for i in range(len(bleu_scores_corpus)):
-                print("BLEU-{0}: {1:.4f}".format(i + 1, bleu_scores_corpus[i]))
-
-        print("Mean train loss: {:.4f}".format(train_loss / len(train_data_loader)))
-
-        if epoch == config["num_epochs"] - 1:
-            # Save the model weights
-            model_filename = get_weights_file_path(
-                config=config,
-                epoch="{:03d}".format(epoch),
-            )
-            save_model(
-                model_filename=model_filename,
-                epoch=epoch,
-                model=model,
-                optimizer=optimizer,
-                global_step=global_step,
-            )
+    trainer.train(
+        train_dataloader=train_data_loader,
+        val_dataloader=test_data_loader,
+    )
