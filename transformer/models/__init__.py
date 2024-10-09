@@ -1,6 +1,7 @@
-from .transformer import Transformer, build_transformer
+from .transformer import TransformerConfig, Transformer, build_transformer
 
 __all__ = [
+    "TransformerConfig",
     "Transformer",
     "build_transformer",
 ]
