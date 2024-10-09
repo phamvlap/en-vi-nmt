@@ -22,6 +22,16 @@ class Transformer(nn.Module):
         tgt_position: PositionalEncoding,
         projection_layer: ProjectionLayer,
     ) -> None:
+        """
+        Args
+            encoder: Encoder
+            decoder: Decoder
+            src_embedding: InputEmbedding for Encoder
+            tgt_embedding: InputEmbedding for Decoder
+            src_position: PositionalEncoding for Encoder
+            tgt_position: PositionalEncoding for Decoder
+            projection_layer: ProjectionLayer
+        """
         super().__init__()
         self.encoder = encoder
         self.decoder = decoder
@@ -32,6 +42,13 @@ class Transformer(nn.Module):
         self.projection_layer = projection_layer
 
     def encode(self, src: Tensor, src_mask: Tensor) -> Tensor:
+        """
+        Args
+            src: input tensor, shape `(batch_size, seq_length)`
+            src_mask: mask tensor, shape `(batch_size, 1, 1, seq_length)`
+        Returns
+            Tensor with shape `(batch_size, seq_length, d_model)`
+        """
         src = self.src_embedding(src)
         src = self.src_position(src)
         return self.encoder(x=src, mask=src_mask)
@@ -43,6 +60,15 @@ class Transformer(nn.Module):
         tgt: Tensor,
         tgt_mask: Tensor,
     ) -> Tensor:
+        """
+        Args
+            encoder_output: output tensor from encoder, shape `(batch_size, seq_length, d_model)`
+            src_mask: mask tensor, shape `(batch_size, 1, 1, seq_length)`
+            tgt: input tensor, shape `(batch_size, seq_length)`
+            tgt_mask: mask tensor, shape `(batch_size, 1, 1, seq_length)`
+        Returns
+            Tensor with shape `(batch_size, seq_length, d_model)`
+        """
         tgt = self.tgt_embedding(tgt)
         tgt = self.tgt_position(tgt)
         return self.decoder(
@@ -53,6 +79,12 @@ class Transformer(nn.Module):
         )
 
     def project(self, x: Tensor) -> Tensor:
+        """
+        Args
+            x: input tensor, shape `(batch_size, seq_length, d_model)`
+        Returns
+            Tensor with shape `(batch_size, seq_length, vocab_size)`
+        """
         return self.projection_layer(x)
 
 
@@ -84,7 +116,11 @@ def build_transformer(
 
     encoder_blocks: list[EncoderLayer] = []
     for _ in range(num_encoders):
-        self_attention = MultiHeadAttention(d_model=d_model, h=h, dropout=dropout)
+        self_attention = MultiHeadAttention(
+            d_model=d_model,
+            num_heads=h,
+            dropout=dropout,
+        )
         feed_forward = FeedForward(d_model=d_model, d_ff=d_ff, dropout=dropout)
         encoder_layer = EncoderLayer(
             features=d_model,
@@ -96,8 +132,16 @@ def build_transformer(
 
     decoder_blocks: list[DecoderLayer] = []
     for _ in range(num_decoders):
-        self_attention = MultiHeadAttention(d_model=d_model, h=h, dropout=dropout)
-        cross_attention = MultiHeadAttention(d_model=d_model, h=h, dropout=dropout)
+        self_attention = MultiHeadAttention(
+            d_model=d_model,
+            num_heads=h,
+            dropout=dropout,
+        )
+        cross_attention = MultiHeadAttention(
+            d_model=d_model,
+            num_heads=h,
+            dropout=dropout,
+        )
         feed_forward = FeedForward(d_model=d_model, d_ff=d_ff, dropout=dropout)
         decoder_layer = DecoderLayer(
             features=d_model,

@@ -6,14 +6,13 @@ from torch import Tensor
 
 
 class PositionalEncoding(nn.Module):
-    """
-    Args:
-            d_model: dimension
+    def __init__(self, d_model: int, seq_length: int, dropout: float) -> None:
+        """
+        Args
+            d_model: hidden dimension
             seq_length: length of sequence
             dropout: probability number of elemnets to zero during training
-    """
-
-    def __init__(self, d_model: int, seq_length: int, dropout: float) -> None:
+        """
         super().__init__()
         self.d_model = d_model
         self.seq_length = seq_length
@@ -48,6 +47,11 @@ class PositionalEncoding(nn.Module):
         self.register_buffer("pe", pe)
 
     def forward(self, x: Tensor) -> Tensor:
-        # x (batch_size, seq_length, d_model) -> (batch_size, seq_length, d_model)
+        """
+        Args
+            x: input tensor, shape `(batch_size, seq_length, d_model)`
+        Returns
+            Tensor with shape `(batch_size, seq_length, d_model)`
+        """
         x = x + (self.pe[:, : x.shape[1], :]).requires_grad_(False)
         return self.dropout(x)
