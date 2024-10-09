@@ -1,3 +1,4 @@
-test.ipynb
-test.py
-data/
+/test.*
+/data
+/dataset
+/trained
