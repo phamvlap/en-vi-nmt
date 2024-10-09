@@ -49,49 +49,56 @@ class MultiHeadAttention(nn.Module):
         query: Tensor,
         key: Tensor,
         value: Tensor,
-        mask: Tensor,
-        dropout: nn.Dropout | None,
+        mask: Tensor | None = None,
+        dropout: nn.Dropout | None = None,
     ) -> tuple[Tensor, Tensor]:
         """
         Args
             query: query tensor, shape `(batch_size, num_heads, seq_length, d_k)`
             key: key tensor, shape `(batch_size, num_heads, seq_length, d_k)`
             value: value tensor, shape `(batch_size, num_heads, seq_length, d_k)`
-            mask: mask tensor, shape `(batch_size, 1, 1, seq_length)`
+            mask: mask tensor, shape `(batch_size, 1, 1, seq_length)` or `(batch_size, 1, seq_length, seq_length)`
             dropout: nn.Dropout
         Returns
             output: Tensor with shape `(batch_size, num_heads, seq_length, d_k)`
-            attention_scores: Tensor with shape `(batch_size, num_heads, seq_length, seq_length)`
+            attn_scores: Tensor with shape `(batch_size, num_heads, seq_length, seq_length)`
         """
         d_k: int = query.shape[-1]
 
         # (batch_size, h, seq_length, d_k) @ (batch_size, h, d_k, seq_length) = (batch_size, h, seq_length, seq_length)
-        attention_scores: Tensor = torch.matmul(
-            query, key.transpose(-2, -1)
+        attn_scores: Tensor = torch.matmul(
+            query,
+            key.transpose(-2, -1),
         ) / math.sqrt(d_k)
 
         # Set the masked positions (mask == 0) to -1e9
         if mask is not None:
-            attention_scores = attention_scores.masked_fill_(
+            attn_scores.masked_fill_(
                 mask=(mask == 0),
                 value=float("-inf"),
             )
 
-        attention_scores = attention_scores.softmax(dim=-1)
+        attn_scores = attn_scores.softmax(dim=-1)
         if dropout is not None:
-            attention_scores = dropout(attention_scores)
+            attn_scores = dropout(attn_scores)
 
         # (batch_size, h, seq_length, seq_length) @ (batch_size, h, seq_length, d_k) = (batch_size, h, seq_length, d_k)
-        output = torch.matmul(attention_scores, value)
-        return output, attention_scores
+        attn_weights = torch.matmul(attn_scores, value)
+        return attn_weights, attn_scores
 
-    def forward(self, q: Tensor, k: Tensor, v: Tensor, mask: Tensor) -> Tensor:
+    def forward(
+        self,
+        q: Tensor,
+        k: Tensor,
+        v: Tensor,
+        mask: Tensor | None = None,
+    ) -> Tensor:
         """
         Args
             q: query tensor, shape `(batch_size, seq_length, d_model)`
             k: query tensor, shape `(batch_size, seq_length, d_model)`
             v: query tensor, shape `(batch_size, seq_length, d_model)`
-            mask: mask tensor, shape `(batch_size, 1, 1, seq_length)`
+            mask: mask tensor, shape `(batch_size, 1, 1, seq_length)` or `(batch_size, 1, seq_length, seq_length)`
         Returns
             Tensor with shape `(batch_size, seq_length, d_model)`
         """
@@ -105,24 +112,10 @@ class MultiHeadAttention(nn.Module):
         # --> (batch_size, seq_length, h, d_k)
         # --> (batch_size, h, seq_length, d_k)
         batch_size, seq_length = query.shape[0], query.shape[1]
-        query = query.view(
-            batch_size,
-            seq_length,
-            self.num_heads,
-            self.d_k,
-        ).transpose(1, 2)
-        key = key.view(
-            batch_size,
-            seq_length,
-            self.num_heads,
-            self.d_k,
-        ).transpose(1, 2)
-        value = value.view(
-            batch_size,
-            seq_length,
-            self.num_heads,
-            self.d_k,
-        ).transpose(1, 2)
+
+        query = self._reshape_to_4d(query, batch_size, seq_length)
+        key = self._reshape_to_4d(key, batch_size, seq_length)
+        value = self._reshape_to_4d(value, batch_size, seq_length)
 
         attn_weights, attn_scores = MultiHeadAttention.attention(
             query=query,
@@ -136,9 +129,26 @@ class MultiHeadAttention(nn.Module):
         attn_weights = (
             attn_weights.transpose(1, 2)
             .contiguous()
-            .view(attn_weights.shape[0], -1, self.num_heads * self.d_k)
+            .view(batch_size, -1, self.num_heads * self.d_k)
         )
 
         # (batch_size, seq_length, d_model) --> (batch_size, seq_length, d_model)
         output = self.w_o(attn_weights)
         return output
+
+    def _reshape_to_4d(self, x: Tensor, batch_size: int, seq_length: int) -> Tensor:
+        """
+        Args
+            x: input tensor, shape `(batch_size, seq_length, d_model)`
+            batch_size: batch size
+            seq_length: sequence length
+        Returns
+            Tensor with shape `(batch_size, num_heads, seq_length, d_k)`
+        """
+        reshaped = x.view(
+            batch_size,
+            seq_length,
+            self.num_heads,
+            self.d_k,
+        ).transpose(1, 2)
+        return reshaped

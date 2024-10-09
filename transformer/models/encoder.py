@@ -32,7 +32,7 @@ class EncoderLayer(nn.Module):
             [ResidualConnection(features=features, dropout=dropout) for _ in range(2)]
         )
 
-    def forward(self, x: Tensor, src_mask: Tensor) -> Tensor:
+    def forward(self, x: Tensor, src_mask: Tensor | None = None) -> Tensor:
         """
         Args
             x: input tensor, shape `(batch_size, seq_length, d_model)`
@@ -59,15 +59,15 @@ class Encoder(nn.Module):
         self.layers = layers
         self.norm = LayerNormalization(features=features)
 
-    def forward(self, x: Tensor, mask: Tensor) -> Tensor:
+    def forward(self, x: Tensor, src_mask: Tensor | None = None) -> Tensor:
         """
         Args
             x: input tensor, shape `(batch_size, seq_length, d_model)`
-            mask: mask tensor, shape `(batch_size, 1, 1, seq_length)`
+            src_mask: mask tensor, shape `(batch_size, 1, 1, seq_length)`
         Returns
             Tensor with shape `(batch_size, seq_length, d_model)`
         """
         for layer in self.layers:
-            x = layer(x=x, src_mask=mask)
+            x = layer(x=x, src_mask=src_mask)
         output = self.norm(x)
         return output

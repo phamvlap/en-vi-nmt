@@ -39,15 +39,15 @@ class DecoderLayer(nn.Module):
         self,
         x: Tensor,
         encoder_output: Tensor,
-        src_mask: Tensor,
-        tgt_mask: Tensor,
+        src_mask: Tensor | None = None,
+        tgt_mask: Tensor | None = None,
     ) -> Tensor:
         """
         Args
             x: input tensor, shape `(batch_size, seq_length, d_model)`
             encoder_output: output tensor from encoder, shape `(batch_size, seq_length, d_model)`
             src_mask: mask tensor of encoder, shape `(batch_size, 1, 1, seq_length)`
-            tgt_mask: mask tensor of decoder, shape `(batch_size, 1, 1, seq_length)`
+            tgt_mask: mask tensor of decoder, shape `(batch_size, 1, seq_length, seq_length)`
         Returns
             Tensor with shape `(batch_size, seq_length, d_model)`
         """
@@ -91,7 +91,7 @@ class Decoder(nn.Module):
             x: input tensor, shape `(batch_size, seq_length, d_model)`
             encoder_output: output tensor from encoder, shape `(batch_size, seq_length, d_model)`
             src_mask: mask tensor of encoder, shape `(batch_size, 1, 1, seq_length)`
-            tgt_mask: mask tensor of decoder, shape `(batch_size, 1, 1, seq_length)`
+            tgt_mask: mask tensor of decoder, shape `(batch_size, 1, seq_length, seq_length)`
         Returns
             Tensor with shape `(batch_size, seq_length, d_model)`
         """
@@ -102,4 +102,5 @@ class Decoder(nn.Module):
                 src_mask=src_mask,
                 tgt_mask=tgt_mask,
             )
-        return self.norm(x)
+        output = self.norm(x)
+        return output
