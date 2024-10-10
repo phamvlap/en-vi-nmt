@@ -55,9 +55,8 @@ def create_tokenizer_trainer(
 
 
 def tokenize(dataset: Dataset, config: dict, lang: str, min_freq: int = 2) -> Tokenizer:
-    tokenizer_path = Path(
-        f'{config['tokenizer_dir']}/{config["tokenizer_file"].format(lang)}'
-    )
+    tokenizer_file = config["tokenizer_file"].format(lang)
+    tokenizer_path = Path(f"{config['tokenizer_dir']}/{tokenizer_file}")
 
     tokenizer, trainer = create_tokenizer_trainer(
         tokenizer_type=config["tokenizer_type"],
