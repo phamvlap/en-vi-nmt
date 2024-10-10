@@ -4,9 +4,9 @@ import torch.nn as nn
 from pathlib import Path
 
 from transformer.models import TransformerConfig, build_transformer
-from .preprocess import load_tokenizer
-from .utils import load_data, get_list_weights_file_paths, get_weights_file_path
-from .dataloader import get_dataloader
+from .tokenizer import load_tokenizer
+from .utils import get_list_weights_file_paths, get_weights_file_path
+from .dataset import get_dataloader
 from .constants import SpecialToken
 from .trainer import TrainerArguments, Trainer
 from .utils import make_optimizer, get_lr_scheduler, set_seed
@@ -26,18 +26,23 @@ def train_model(config: dict) -> None:
     # Create the folder to save model weights
     Path(f"{config['model_folder']}").mkdir(parents=True, exist_ok=True)
 
-    # Load the dataset
-    dataset = load_data(config=config)
-
     # Get the tokenizers
-    tokenizer_src, tokenizer_tgt = load_tokenizer(dataset=dataset, config=config)
+    tokenizer_src, tokenizer_tgt = load_tokenizer(config=config)
 
     # Get the data loaders
-    train_data_loader, test_data_loader = get_dataloader(
-        dataset=dataset,
-        config=config,
+    train_dataloader = get_dataloader(
         tokenizer_src=tokenizer_src,
         tokenizer_tgt=tokenizer_tgt,
+        config=config,
+        split="train",
+        batch_size=config["batch_size_train"],
+    )
+    val_dataloader = get_dataloader(
+        tokenizer_src=tokenizer_src,
+        tokenizer_tgt=tokenizer_tgt,
+        config=config,
+        split="val",
+        batch_size=config["batch_size_val"],
     )
 
     # Preload model
@@ -149,6 +154,6 @@ def train_model(config: dict) -> None:
     )
 
     trainer.train(
-        train_dataloader=train_data_loader,
-        val_dataloader=test_data_loader,
+        train_dataloader=train_dataloader,
+        val_dataloader=val_dataloader,
     )
