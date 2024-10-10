@@ -4,36 +4,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from torch.utils.data import Dataset
 from pathlib import Path
 
 from nltk.translate import bleu_score
-from datasets import load_dataset, Dataset as DatasetModel
 
 ADAM = "adam"
 ADAMW = "adamw"
 NOAM_DECAY = "noam"
-
-
-def load_data(config: dict) -> Dataset:
-    if config["data_files"] is not None:
-        ds = load_dataset(
-            path=config["datasource"],
-            data_files=config["data_files"],
-            split=config["split_mode"],
-        )
-    else:
-        ds = load_dataset(
-            path=config["datasource"],
-            split=config["split_mode"],
-        )
-    out = DatasetModel.from_dict(
-        {
-            config["lang_src"]: ds["English"],
-            config["lang_tgt"]: ds["Vietnamese"],
-        }
-    )
-    return out
 
 
 def calc_bleu_score(cands: list[str], refs: list[list[str]]) -> list[float]:
