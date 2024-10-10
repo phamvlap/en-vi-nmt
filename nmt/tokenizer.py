@@ -1,8 +1,10 @@
 import os
+import shutil
+import pandas as pd
+
 from pathlib import Path
 from typing import Generator
 from torch.utils.data import Dataset
-
 from tokenizers import Tokenizer
 from tokenizers.models import WordLevel, BPE
 from tokenizers.pre_tokenizers import Whitespace
@@ -12,16 +14,16 @@ from .constants import SpecialToken, TokenizerModel
 
 
 # Return a generator that yields all the sentences in the dataset (iterator)
-def get_iterator(dataset: Dataset, language: str) -> Generator[str, None, None]:
+def get_iterator(dataset: Dataset, lang: str) -> Generator[str, None, None]:
     for item in dataset:
-        yield item[language]
+        yield item[lang]
 
 
 def create_tokenizer_trainer(
-    tokenizer_model: str,
+    tokenizer_type: str,
     min_freq: int = 2,
 ) -> tuple[Tokenizer, Trainer]:
-    tokenizer_model = tokenizer_model.lower()
+    tokenizer_type = tokenizer_type.strip().lower()
 
     all_special_tokens = [
         SpecialToken.UNK,
@@ -30,7 +32,7 @@ def create_tokenizer_trainer(
         SpecialToken.EOS,
     ]
 
-    if tokenizer_model == TokenizerModel.WORD_LEVEL:
+    if tokenizer_type == TokenizerModel.WORD_LEVEL:
         tokenizer = Tokenizer(model=WordLevel(unk_token=SpecialToken.UNK))
         tokenizer.pre_tokenizer = Whitespace()
 
@@ -38,7 +40,7 @@ def create_tokenizer_trainer(
             special_tokens=all_special_tokens,
             min_frequency=min_freq,
         )
-    elif tokenizer_model == TokenizerModel.BPE:
+    elif tokenizer_type == TokenizerModel.BPE:
         tokenizer = Tokenizer(model=BPE(unk_token=SpecialToken.UNK))
         tokenizer.pre_tokenizer = Whitespace()
 
@@ -47,7 +49,7 @@ def create_tokenizer_trainer(
             min_frequency=min_freq,
         )
     else:
-        raise ValueError("Unsupported tokenizer model: {}".format(tokenizer_model))
+        raise ValueError("Unsupported tokenizer model: {}".format(tokenizer_type))
 
     return tokenizer, trainer
 
@@ -58,7 +60,7 @@ def tokenize(dataset: Dataset, config: dict, lang: str, min_freq: int = 2) -> To
     )
 
     tokenizer, trainer = create_tokenizer_trainer(
-        tokenizer_model=config["tokenizer_model"],
+        tokenizer_type=config["tokenizer_type"],
         min_freq=min_freq,
     )
 
@@ -71,8 +73,9 @@ def tokenize(dataset: Dataset, config: dict, lang: str, min_freq: int = 2) -> To
     return tokenizer
 
 
-def load_tokenizer(dataset: Dataset, config: dict) -> tuple[Tokenizer, Tokenizer]:
+def load_tokenizer(config: dict) -> tuple[Tokenizer, Tokenizer]:
     tokenizer_dir = Path(config["tokenizer_dir"])
+    tokenizer_file = config["tokenizer_file"]
 
     if (
         os.path.exists(tokenizer_dir)
@@ -80,25 +83,43 @@ def load_tokenizer(dataset: Dataset, config: dict) -> tuple[Tokenizer, Tokenizer
         and len(os.listdir(tokenizer_dir)) >= 2
     ):
         tokenizer_src = Tokenizer.from_file(
-            Path(
-                f'{tokenizer_dir}/{config["tokenizer_file"].format(config["lang_src"])}'
-            )
+            Path(f'{tokenizer_dir}/{tokenizer_file.format(config["lang_src"])}')
         )
         tokenizer_tgt = Tokenizer.from_file(
-            Path(
-                f'{tokenizer_dir}/{config["tokenizer_file"].format(config["lang_tgt"])}'
-            )
+            Path(f'{tokenizer_dir}/{tokenizer_file.format(config["lang_tgt"])}')
         )
     else:
-        Path(tokenizer_dir).mkdir(parents=True, exist_ok=True)
-        tokenizer_src = tokenize(
-            dataset=dataset,
-            config=config,
-            lang=config["lang_src"],
-        )
-        tokenizer_tgt = tokenize(
-            dataset=dataset,
-            config=config,
-            lang=config["lang_tgt"],
-        )
+        raise ValueError("Tokenizers not found.")
+
     return tokenizer_src, tokenizer_tgt
+
+
+def train_tokenizer(config: dict) -> None:
+    if config["train_data_file"] is None:
+        raise ValueError("Train data file not found.")
+
+    df = pd.read_csv(config["train_data_file"])
+    dataset = Dataset.from_pandas(df)
+
+    tokenizer_dir = Path(config["tokenizer_dir"])
+    if tokenizer_dir.exists():
+        shutil.rmtree(tokenizer_dir)
+    tokenizer_dir.mkdir(parents=True, exist_ok=True)
+
+    src_tokenizer = tokenize(
+        dataset=dataset,
+        config=config,
+        lang=config["lang_src"],
+        min_freq=config["min_freq"],
+    )
+    tgt_tokenizer = tokenize(
+        dataset=dataset,
+        config=config,
+        lang=config["lang_tgt"],
+        min_freq=config["min_freq"],
+    )
+
+    print(f"Tokenizers saved to {tokenizer_dir}")
+    print(f"Tokenizer type: {config['tokenizer_type']}")
+    print(f"Source tokenizer vocab size: {src_tokenizer.get_vocab_size()}")
+    print(f"Target tokenizer vocab size: {tgt_tokenizer.get_vocab_size()}")
