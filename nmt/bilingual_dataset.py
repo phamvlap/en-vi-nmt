@@ -25,7 +25,12 @@ class BilingualDataset(Dataset):
         self.lang_tgt = lang_tgt
         self.seq_length = seq_length
 
+        self.src_sos_token_id = tokenizer_src.token_to_id(token=SpecialToken.SOS)
+        self.src_eos_token_id = tokenizer_src.token_to_id(token=SpecialToken.EOS)
         self.src_pad_token_id = tokenizer_src.token_to_id(token=SpecialToken.PAD)
+
+        self.tgt_sos_token_id = tokenizer_tgt.token_to_id(token=SpecialToken.SOS)
+        self.tgt_eos_token_id = tokenizer_tgt.token_to_id(token=SpecialToken.EOS)
         self.tgt_pad_token_id = tokenizer_tgt.token_to_id(token=SpecialToken.PAD)
 
     def __len__(self) -> int:
@@ -54,9 +59,9 @@ class BilingualDataset(Dataset):
             # Add SOS, EOS and PAD tokens to the encoder input
             encoder_input = torch.cat(
                 [
-                    self.sos_token,
+                    Tensor([self.src_sos_token_id]).to(torch.int64),
                     encoder_input_tokens,
-                    self.eos_token,
+                    Tensor([self.src_eos_token_id]).to(torch.int64),
                     Tensor([self.src_pad_token_id] * src_num_pad_tokens).to(
                         torch.int64
                     ),
@@ -66,9 +71,9 @@ class BilingualDataset(Dataset):
             # Truncate the encoder input
             encoder_input = torch.cat(
                 [
-                    self.sos_token,
+                    Tensor([self.src_sos_token_id]).to(torch.int64),
                     encoder_input_tokens[: self.seq_length - 1],
-                    self.eos_token,
+                    Tensor([self.src_eos_token_id]).to(torch.int64),
                 ]
             )
 
@@ -76,8 +81,8 @@ class BilingualDataset(Dataset):
             # Add SOS and PAD tokens to the decoder input
             decoder_input = torch.cat(
                 [
-                    self.sos_token,
-                    torch.tensor(decoder_input_tokens, dtype=torch.int64),
+                    Tensor([self.tgt_sos_token_id]).to(torch.int64),
+                    decoder_input_tokens,
                     Tensor([self.tgt_pad_token_id] * tgt_num_pad_tokens).to(
                         torch.int64
                     ),
@@ -86,8 +91,8 @@ class BilingualDataset(Dataset):
             # Add EOS token to the label (target - what the decoder should output)
             labels = torch.cat(
                 [
-                    torch.tensor(decoder_input_tokens, dtype=torch.int64),
-                    self.eos_token,
+                    decoder_input_tokens,
+                    Tensor([self.tgt_eos_token_id]).to(torch.int64),
                     Tensor([self.tgt_pad_token_id] * tgt_num_pad_tokens).to(
                         torch.int64
                     ),
@@ -97,21 +102,26 @@ class BilingualDataset(Dataset):
             # Truncate the decoder input and label
             decoder_input = torch.cat(
                 [
-                    self.sos_token,
+                    Tensor([self.tgt_sos_token_id]).to(torch.int64),
                     decoder_input_tokens[: self.seq_length - 1],
                 ]
             )
             labels = torch.cat(
                 [
                     decoder_input_tokens[: self.seq_length - 1],
-                    self.eos_token,
+                    Tensor([self.tgt_eos_token_id]).to(torch.int64),
                 ]
             )
 
-        return {
+        assert encoder_input.size(0) == self.seq_length
+        assert decoder_input.size(0) == self.seq_length
+        assert labels.size(0) == self.seq_length
+
+        data = {
             "encoder_input": encoder_input,  # (seq_length, )
             "decoder_input": decoder_input,  # (seq_length, )
             "labels": labels,  # (seq_length, )
             "src_text": src_text,
             "tgt_text": tgt_text,
         }
+        return data
