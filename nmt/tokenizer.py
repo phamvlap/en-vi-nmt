@@ -4,17 +4,19 @@ import pandas as pd
 
 from pathlib import Path
 from typing import Generator
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset as DatasetType
 from tokenizers import Tokenizer
 from tokenizers.models import WordLevel, BPE
 from tokenizers.pre_tokenizers import Whitespace
-from tokenizers.trainers import WordLevelTrainer, Trainer
+from tokenizers.trainers import Trainer, WordLevelTrainer, BpeTrainer
+from datasets import Dataset
+
 
 from .constants import SpecialToken, TokenizerModel
 
 
 # Return a generator that yields all the sentences in the dataset (iterator)
-def get_iterator(dataset: Dataset, lang: str) -> Generator[str, None, None]:
+def get_iterator(dataset: DatasetType, lang: str) -> Generator[str, None, None]:
     for item in dataset:
         yield item[lang]
 
@@ -44,7 +46,7 @@ def create_tokenizer_trainer(
         tokenizer = Tokenizer(model=BPE(unk_token=SpecialToken.UNK))
         tokenizer.pre_tokenizer = Whitespace()
 
-        trainer = WordLevelTrainer(
+        trainer = BpeTrainer(
             special_tokens=all_special_tokens,
             min_frequency=min_freq,
         )
@@ -54,7 +56,12 @@ def create_tokenizer_trainer(
     return tokenizer, trainer
 
 
-def tokenize(dataset: Dataset, config: dict, lang: str, min_freq: int = 2) -> Tokenizer:
+def tokenize(
+    dataset: DatasetType,
+    config: dict,
+    lang: str,
+    min_freq: int = 2,
+) -> Tokenizer:
     tokenizer_file = config["tokenizer_file"].format(lang)
     tokenizer_path = Path(f"{config['tokenizer_dir']}/{tokenizer_file}")
 
@@ -64,7 +71,7 @@ def tokenize(dataset: Dataset, config: dict, lang: str, min_freq: int = 2) -> To
     )
 
     tokenizer.train_from_iterator(
-        iterator=get_iterator(dataset=dataset, language=lang),
+        iterator=get_iterator(dataset=dataset, lang=lang),
         trainer=trainer,
     )
     tokenizer.save(path=str(tokenizer_path))

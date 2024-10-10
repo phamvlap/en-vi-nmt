@@ -1,9 +1,9 @@
 import pandas as pd
 
 from tokenizers import Tokenizer
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from pathlib import Path
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 from typing import Literal
 
 from .bilingual_dataset import BilingualDataset
@@ -19,7 +19,7 @@ def get_dataloader(
     if split not in ["train", "val", "test"]:
         raise ValueError(f"split must be one of (train, val, test), got {split}")
 
-    df = pd.reac_csv(config[f"{split}_data_file"])
+    df = pd.read_csv(config[f"{split}_data_file"])
     dataset = Dataset.from_pandas(df)
 
     bilingual_dataset = BilingualDataset(
