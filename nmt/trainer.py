@@ -44,10 +44,11 @@ class Trainer:
         optimizer: optim.Optimizer,
         criterion: nn.CrossEntropyLoss,
         args: TrainerArguments,
+        device: torch.device,
         lr_scheduler: optim.lr_scheduler.LRScheduler | None = None,
     ) -> None:
         self.model = model
-        self.device = model.device
+        self.device = device
         self.model_config = model_config
         self.src_tokenizer = src_tokenizer
         self.tgt_tokenizer = tgt_tokenizer

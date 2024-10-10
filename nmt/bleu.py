@@ -14,10 +14,10 @@ def compute_bleu(
     dataset: BilingualDataset,
     tgt_tokenizer: Tokenizer,
     seq_length: int,
+    device: torch.device,
     log_examples: bool = False,
     logging_every_n_steps: int = 1000,
 ) -> list[float]:
-    device = model.device
     model.eval()
 
     pred_text_list = []

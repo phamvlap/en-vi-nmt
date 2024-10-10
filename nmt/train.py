@@ -151,6 +151,7 @@ def train_model(config: dict) -> None:
         optimizer=optimizer,
         criterion=loss_fn,
         args=trainer_args,
+        device=device,
         lr_scheduler=lr_scheduler,
     )
 
