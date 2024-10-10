@@ -41,7 +41,7 @@ class Trainer:
         model_config: TransformerConfig,
         src_tokenizer: Tokenizer,
         tgt_tokenizer: Tokenizer,
-        optimizer: optim.optimizer.Optimizer,
+        optimizer: optim.Optimizer,
         criterion: nn.CrossEntropyLoss,
         args: TrainerArguments,
         lr_scheduler: optim.lr_scheduler.LRScheduler | None = None,

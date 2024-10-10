@@ -50,6 +50,7 @@ def train_model(config: dict) -> None:
     global_step = 0
     scaler_state_dict = None
     filepath = None
+    checkpoint = None
 
     if config["preload"] == "latest":
         list_filepaths = get_list_weights_file_paths(config=config)

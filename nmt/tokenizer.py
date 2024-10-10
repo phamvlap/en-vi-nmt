@@ -81,19 +81,16 @@ def tokenize(
 
 def load_tokenizer(config: dict) -> tuple[Tokenizer, Tokenizer]:
     tokenizer_dir = Path(config["tokenizer_dir"])
-    tokenizer_file = config["tokenizer_file"]
+    src_tokenizer_file = config["tokenizer_file"].format(config["lang_src"])
+    tgt_tokenizer_file = config["tokenizer_file"].format(config["lang_tgt"])
 
     if (
         os.path.exists(tokenizer_dir)
         and os.path.isdir(tokenizer_dir)
         and len(os.listdir(tokenizer_dir)) >= 2
     ):
-        tokenizer_src = Tokenizer.from_file(
-            Path(f'{tokenizer_dir}/{tokenizer_file.format(config["lang_src"])}')
-        )
-        tokenizer_tgt = Tokenizer.from_file(
-            Path(f'{tokenizer_dir}/{tokenizer_file.format(config["lang_tgt"])}')
-        )
+        tokenizer_src = Tokenizer.from_file(f"{tokenizer_dir}/{src_tokenizer_file}")
+        tokenizer_tgt = Tokenizer.from_file(f"{tokenizer_dir}/{tgt_tokenizer_file}")
     else:
         raise ValueError("Tokenizers not found.")
 
