@@ -8,11 +8,13 @@ from .preprocess import load_tokenizer
 from .utils import load_data, get_list_weights_file_paths, get_weights_file_path
 from .dataloader import get_dataloader
 from .constants import SpecialToken
-from .utils import make_optimizer, get_lr_scheduler
 from .trainer import TrainerArguments, Trainer
+from .utils import make_optimizer, get_lr_scheduler, set_seed
 
 
 def train_model(config: dict) -> None:
+    set_seed(config["seed"])
+
     # Define the device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device: {}".format(device))

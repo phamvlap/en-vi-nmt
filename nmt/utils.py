@@ -1,3 +1,6 @@
+import random
+import numpy as np
+import torch
 import torch.nn as nn
 import torch.optim as optim
 
@@ -117,3 +120,10 @@ def get_list_weights_file_paths(config: dict) -> list[str] | None:
         return None
     weight_filepaths = [str(file) for file in sorted(weight_filepaths)]
     return weight_filepaths
+
+
+def set_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
