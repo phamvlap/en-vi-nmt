@@ -162,7 +162,7 @@ class Trainer:
                         criterion=self.criterion,
                         device=self.device,
                     )
-                    bleu_score = compute_bleu(
+                    bleu_scores = compute_bleu(
                         model=self.model,
                         dataset=val_dataloader.dataset,
                         tgt_tokenizer=self.tgt_tokenizer,
@@ -170,10 +170,14 @@ class Trainer:
                         log_examples=self.args.log_examples,
                         logging_every_n_steps=self.args.logging_every_n_steps,
                     )
+                    bleu_dict = {
+                        f"val/bleu_{i+1}": bleu_scores[i]
+                        for i in range(len(bleu_scores))
+                    }
                     self.wb_run.log(
                         {
                             "val/loss": val_loss,
-                            "val/bleu": bleu_score,
+                            **bleu_dict,
                         },
                         step=global_step,
                     )
